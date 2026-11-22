@@ -45,9 +45,9 @@ jobs:
           const deadline = Date.now() + (context.payload.action === 'ready_for_review' ? 600000 : 0);
           while (true) {
             let changedCaller = false, unchangedCaller = false, reviews;
-            // Bound API work to the newest twenty runs on this exact head.
-            const {data} = await github.rest.actions.listWorkflowRunsForRepo({owner, repo, head_sha: head, event: 'pull_request', per_page: 20});
-            for (const run of data.workflow_runs) {
+            // Paginate this exact head; immutable file/job evidence is cached across polls.
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {owner, repo, head_sha: head, event: 'pull_request', per_page: 100});
+            for (const run of runs) {
               if (run.head_sha !== head || !run.pull_requests.some(pr => pr.number === number)) continue;
               if (!(run.referenced_workflows || []).some(ref => ref.path === sourcePath && ref.sha === sourceSha)) continue;
               // A changed caller cannot invent success beside a skipped reusable job.
@@ -78,7 +78,7 @@ jobs:
               core.info(`Trusted Claude review completed for current PR commit ${head}; run ${run.id}. Human review still decides whether findings are resolved.`);
               return;
             }
-            if (changedCaller && !unchangedCaller) {
+            if (changedCaller && !unchangedCaller && Date.now() >= deadline) {
               core.setFailed('Review caller changed in this PR. Its own workflow cannot certify merge evidence; use the audited owner-approved caller-upgrade procedure after independent review.');
               return;
             }

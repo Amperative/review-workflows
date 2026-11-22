@@ -10,6 +10,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '24'
@@ -18,13 +19,16 @@ jobs:
           ruby <<'RUBY'
           require 'yaml'
           require 'digest'
+          require 'open3'
           source = File.read('.github/workflows/claude-review.yml')
           abort 'public source differs from audited hardened source' unless Digest::SHA256.hexdigest(source) == 'c6d68186b67e614971715e2b562a192cc5b3f59c143180f423c11955af48ce13'
           gate = YAML.safe_load(File.read('.github/workflows/review-pull-requests.yml'))
           caller = YAML.safe_load(File.read('.github/workflows/review-ready-prs.yml'))
           expected = gate.fetch('jobs').fetch('freshness').fetch('steps').first.fetch('env').fetch('EXPECTED_REVIEW_REF')
+          pinned, result = Open3.capture2('git', 'show', expected.split('@').last + ':.github/workflows/claude-review.yml')
+          abort 'pinned source is missing or differs from audited working copy' unless result.success? && pinned == source
           abort 'caller and gate exact references disagree' unless expected == caller.fetch('jobs').fetch('review').fetch('uses')
-          abort 'public reference must be an exact reviewed commit' unless expected.match?(/\AAmperative\/review-workflows\/\.github\/workflows\/claude-review.yml@[0-9a-f]{40}\z/)
+          abort 'public reference must be an exact reviewed commit' unless expected.match?(/\AAmperative\/review-workflows\/\.github\/workflows\/claude-review\.yml@[0-9a-f]{40}\z/)
           abort 'wrapper must not invoke a model' if gate.fetch('jobs').key?('review')
           abort 'draft freshness must fail closed, not skip' if gate.fetch('jobs').fetch('freshness').key?('if')
           abort 'local paid caller must only schedule ready requests' unless caller.fetch(true).fetch('pull_request').fetch('types') == ['ready_for_review']
