@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize, reopened]
+    types: [ready_for_review]
 
 permissions: {}
 
@@ -12,10 +12,10 @@ concurrency:
 
 jobs:
   review:
-    if: ${{ !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' }}
+    if: ${{ github.event.action == 'ready_for_review' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' }}
     permissions:
       id-token: write
       contents: read
       pull-requests: write
     # The shared workflow authenticates with GitHub OIDC; no repository secrets are passed.
-    uses: Amperative/review-workflows/.github/workflows/claude-review.yml@7e2e6e2b5a60cf8a917256343e7e7b3b7f995b40 # shared review diagnostics 2026-11-22
+    uses: Amperative/review-workflows/.github/workflows/claude-review.yml@45a5be608b0e41359196ea1fb98cea838b7a29e3
