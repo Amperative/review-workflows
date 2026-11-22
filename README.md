@@ -3,3 +3,11 @@
 Public copy of the reusable Claude review workflow audited in Amperative/.github PR #5, source commit `f02f22f6f5e07554572b72bbdd04d2f8f3a9c652`. Public Amperative repositories can call the same reviewed workflow. No credentials or private application code are published.
 
 Callers must pin the exact source commit authorized in Anthropic. Workflow changes require review and explicit approval of a new exact-commit trust entry. Never trust a branch, tag or path prefix. JWTs and exchanged tokens remain private; only bounded diagnostic categories may be logged.
+
+## Review requests
+
+Create PRs in draft. Mark a completed revision ready to request a review; return to draft while making fixes, then mark ready again. Pushes still run ordinary build/test checks, but do not invoke Claude.
+
+The organization wrapper only checks review freshness, using a successful exact-source model job plus a posted review for the current commit. The local `review-ready-prs.yml` caller is the sole paid-review trigger, so there are no duplicate model requests. A non-draft PR opened directly or changed after review fails freshness until explicitly reviewed. If GitHub misses the wrapper's ready event, rerun its lightweight failed check after the requested review completes.
+
+The hardened public source is pinned at `45a5be608b0e41359196ea1fb98cea838b7a29e3`; its contents match the upstream audited source exactly. Its bounded exact-commit access grant was explicitly approved and saved on November 22, 2026. Runtime commands after tool isolation use absolute paths and explicit repository API endpoints; they do not depend on the checkout directory.
