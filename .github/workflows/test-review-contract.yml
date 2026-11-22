@@ -10,6 +10,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
       - name: Verify source identity and caller agreement
         run: |
           ruby <<'RUBY'
@@ -27,3 +30,6 @@ jobs:
           abort 'local paid caller must only schedule ready requests' unless caller.fetch(true).fetch('pull_request').fetch('types') == ['ready_for_review']
           puts 'Audited source bytes, exact pin agreement, single paid trigger and fail-closed gate verified.'
           RUBY
+
+      - name: Test freshness evidence and draft recovery
+        run: node --test tests/freshness_test.cjs
