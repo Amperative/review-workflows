@@ -1,21 +1,13 @@
-name: Claude Code Review
-
+name: Claude review scheduling
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize, reopened]
-
+    types: [ready_for_review]
 permissions: {}
-
-concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
   review:
-    if: ${{ !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' }}
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-    # The shared workflow authenticates with GitHub OIDC; no repository secrets are passed.
-    uses: Amperative/review-workflows/.github/workflows/claude-review.yml@7e2e6e2b5a60cf8a917256343e7e7b3b7f995b40 # shared review diagnostics 2026-11-22
+    # Compatibility path for the existing organization ruleset. The local
+    # review-ready-prs.yml workflow is the sole paid-review trigger.
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo 'Claude review is requested through the local ready-event caller.'

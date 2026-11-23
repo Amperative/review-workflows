@@ -1,0 +1,31 @@
+name: Test public reviewer contract
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify audited source and sole review trigger
+        run: |
+          ruby <<'RUBY'
+          require 'yaml'
+          require 'digest'
+          require 'open3'
+          source = File.read('.github/workflows/claude-review.yml')
+          abort 'source differs from audited hardened reviewer' unless Digest::SHA256.hexdigest(source) == 'c6d68186b67e614971715e2b562a192cc5b3f59c143180f423c11955af48ce13'
+          caller = YAML.safe_load(File.read('.github/workflows/review-ready-prs.yml'))
+          reference = caller.fetch('jobs').fetch('review').fetch('uses')
+          abort 'expected exact public source reference' unless reference.match?(/\AAmperative\/review-workflows\/\.github\/workflows\/claude-review\.yml@[0-9a-f]{40}\z/)
+          pinned, result = Open3.capture2('git', 'show', reference.split('@').last + ':.github/workflows/claude-review.yml')
+          abort 'pinned source differs from audited source' unless result.success? && pinned == source
+          abort 'paid caller must only schedule ready requests' unless caller.fetch(true).fetch('pull_request').fetch('types') == ['ready_for_review']
+          wrapper = YAML.safe_load(File.read('.github/workflows/review-pull-requests.yml'))
+          abort 'organization compatibility job must stay disabled' unless wrapper.fetch('jobs').fetch('review').fetch('if') == ('$' + '{{ false }}')
+          puts 'Audited pinned source and one explicit ready-event trigger verified.'
+          RUBY
