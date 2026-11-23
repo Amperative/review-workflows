@@ -40,7 +40,7 @@ jobs:
             const {data: current} = await github.rest.pulls.get({owner, repo, pull_number: pr.number});
             if (current.state !== 'open' || current.draft || current.head.sha !== completed.head_sha) continue;
             const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {owner, repo, head_sha: completed.head_sha, event: 'pull_request', per_page: 100});
-            const wrapper = runs.filter(run => run.workflow_id === workflowId && run.path === '.github/workflows/review-pull-requests.yml' && run.head_sha === completed.head_sha && run.id !== completed.id).sort((a,b) => b.id-a.id)[0];
+            const wrapper = runs.filter(run => run.workflow_id === workflowId && run.path === '.github/workflows/review-pull-requests.yml' && run.head_sha === completed.head_sha && (run.pull_requests || []).some(item => item.number === pr.number) && run.id !== completed.id).sort((a,b) => b.id-a.id)[0];
             if (!wrapper) { core.warning('No required freshness run found for this head; check the protected workflow ID and branch CI configuration.'); continue; }
             if (wrapper.status !== 'completed' || wrapper.conclusion !== 'failure') continue;
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {owner, repo, run_id: wrapper.id, per_page: 100});
