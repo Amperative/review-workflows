@@ -26,6 +26,6 @@ jobs:
           abort 'pinned source differs from audited source' unless result.success? && pinned == source
           abort 'paid caller must only schedule ready requests' unless caller.fetch(true).fetch('pull_request').fetch('types') == ['ready_for_review']
           wrapper = YAML.safe_load(File.read('.github/workflows/review-pull-requests.yml'))
-          abort 'organization compatibility job must stay disabled' unless wrapper.fetch('jobs').fetch('review').fetch('if') == '${{ false }}'
+          abort 'organization compatibility job must stay disabled' unless wrapper.fetch('jobs').fetch('review').fetch('if') == ('$' + '{{ false }}')
           puts 'Audited pinned source and one explicit ready-event trigger verified.'
           RUBY
