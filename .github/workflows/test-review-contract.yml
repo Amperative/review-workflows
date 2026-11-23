@@ -36,4 +36,4 @@ jobs:
           RUBY
 
       - name: Test freshness evidence and draft recovery
-        run: node --test tests/freshness_test.cjs
+        run: node --test tests/freshness_test.cjs tests/completion_test.cjs

@@ -8,7 +8,7 @@ Callers must pin the exact source commit authorized in Anthropic. Workflow chang
 
 Create PRs in draft. Mark a completed revision ready to request a review; return to draft while making fixes, then mark ready again. Pushes still run ordinary build/test checks, but do not invoke Claude.
 
-The organization wrapper only checks review freshness, using a successful exact-source model job plus a posted review for the current commit. The local `review-ready-prs.yml` caller is the sole paid-review trigger, so there are no duplicate model requests. A non-draft PR opened directly or changed after review fails freshness until explicitly reviewed. If GitHub misses the wrapper's ready event, rerun its lightweight failed check after the requested review completes.
+The organization wrapper only checks review freshness, using a successful exact-source model job plus a posted review for the current commit. The local `review-ready-prs.yml` caller is the sole paid-review trigger, so there are no duplicate model requests. A non-draft PR opened directly or changed after review fails freshness until explicitly reviewed. A protected default-branch workflow_run completion listener refreshes the failed lightweight check automatically after the requested review completes; manual retry is only infrastructure recovery.
 
 The hardened public source is pinned at `45a5be608b0e41359196ea1fb98cea838b7a29e3`; its contents match the upstream audited source exactly. Its bounded exact-commit access grant was explicitly approved and saved on November 22, 2026. Runtime file paths after tool isolation are absolute, and GitHub API calls name the repository explicitly. Executables come from the trusted GitHub-hosted toolchain through PATH; later operations do not depend on the checkout directory.
 
@@ -17,3 +17,7 @@ Merge evidence must come from a caller identical to its base-branch version, wit
 The freshness gate is enforced through the active organization ruleset's protected-main workflow path, not a check-name match or the PR's own editable copy. Draft freshness reports review-not-requested rather than skipped success. Polling paginates the exact head, caches immutable content/job evidence, and uses a thirty-second interval. Public contract CI verifies audited source bytes, the caller/gate pin agreement, and that only the local ready caller can invoke the model.
 
 This bootstrap PR must use a merge commit, preserving the reviewed source-copy commit as an ancestor of main. Contract CI checks both the pinned commit bytes and the working copy against the audited source hash.
+
+## Automatic completion trigger
+
+Consumers pin `refresh-review-freshness.yml` from a reviewed main commit and call it only from a default-branch `workflow_run` listener. It has Actions write and PR read permissions, no checkout/artifact steps and no provider/ID-token access. It verifies the completed exact-source model run and live PR head, then re-runs only a failed `Current commit reviewed` job from the configured protected organization-wrapper workflow ID. It cannot restart the model or target arbitrary workflows/jobs. Direct pull-request invocation is rejected before any API writes. This completes the GHA-driven draft → ready → review completion flow.
